@@ -2,6 +2,10 @@
 
 A TypeScript weather application with Bangla language support and heat alert system.
 
+![Abaho Dashboard](screenshots/dashboard.png)
+
+
+
 ## 📁 Project Structure
 
 ```
