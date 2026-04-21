@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>আবহাওয়া / Weather</title>
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #ffffff 0%, #86C2F6 100%);
+      --surface: #ffffff;
+      --surface2: #86C2F6;
+      --text: #1a1a1a;
+      --text2: #666666;
+      --border: #cccccc;
+      --accent: #4294FC;
+      --accent2: #2e6bb8;
+      --cool: #86C2F6;
+      --warm: #ff9800;
+      --warning: #ff9800;
+      --danger: #f44336;
+      --warning-bg: #fff3e0;
+      --warning-border: #ff9800;
+      --danger-bg: #ffebee;
+      --danger-border: #f44336;
+      --card-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+      --radius: 20px;
+      --font-body: 'DM Sans', 'Noto Serif Bengali', sans-serif;
+      --font-display: 'DM Serif Display', 'Noto Serif Bengali', serif;
+    }
+
+    body.dark {
+      --bg: linear-gradient(135deg, #1a1a1a 0%, #2e6bb8 100%);
+      --surface: #262626;
+      --surface2: #2e6bb8;
+      --text: #ffffff;
+      --text2: #cccccc;
+      --border: #404040;
+      --card-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Decorative background pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(196, 98, 45, 0.07) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(91, 155, 213, 0.07) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body.heat-warning::before {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(230, 126, 34, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 80% 80%, rgba(243, 156, 18, 0.1) 0%, transparent 50%);
+    }
+
+    body.heat-danger::before {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(192, 57, 43, 0.2) 0%, transparent 60%),
+        radial-gradient(circle at 20% 100%, rgba(231, 76, 60, 0.12) 0%, transparent 50%);
+    }
+
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .app-title {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .app-title span {
+      display: block;
+      font-size: 0.75rem;
+      font-family: var(--font-body);
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 8px 14px;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .control-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* Search */
+    .search-section {
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 6px 6px 6px 18px;
+      box-shadow: var(--card-shadow);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(196, 98, 45, 0.12), var(--card-shadow);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: var(--font-body);
+      outline: none;
+    }
+
+    .search-box input::placeholder { color: var(--text2); }
+
+    .search-btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .search-btn-primary:hover { background: var(--accent2); }
+    .search-btn-primary:active { transform: scale(0.97); }
+
+    .location-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 0 4px;
+    }
+
+    #last-searched {
+      display: none;
+      font-size: 0.78rem;
+      color: var(--text2);
+    }
+
+    #location-btn {
+      font-size: 0.78rem;
+      padding: 6px 12px;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      border-color: var(--warning-border);
+      color: #7d4b00;
+    }
+
+    .alert-danger {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: #7b1e1e;
+    }
+
+    .alert-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 1px; }
+
+    .alert-content { flex: 1; }
+
+    .alert-content strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .alert-content p { font-size: 0.82rem; line-height: 1.4; }
+
+    /* Weather Card */
+    #weather-card {
+      display: none;
+      animation: fadeUp 0.5s cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+
+    .weather-main-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 12px;
+    }
+
+    .city-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .city-info h2 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    #country-flag { font-size: 1.5rem; margin-left: 6px; }
+
+    #condition-text {
+      font-size: 0.85rem;
+      color: var(--text2);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .weather-icon-wrap {
+      width: 72px;
+      height: 72px;
+      background: var(--surface2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+    }
+
+    #weather-icon {
+      width: 52px;
+      height: 52px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .temp-display {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    #temp-value {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: -3px;
+    }
+
+    body.heat-warning #temp-value { color: var(--warning); }
+    body.heat-danger #temp-value { color: var(--danger); }
+
+    #feels-like {
+      font-size: 0.82rem;
+      color: var(--text2);
+      padding-bottom: 12px;
+    }
+
+    /* Temp bar */
+    .temp-bar-wrap {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    #temp-bar {
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 1s cubic-bezier(0.34, 1.2, 0.64, 1), background 0.5s;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stat-icon {
+      font-size: 1rem;
+      margin-right: 4px;
+    }
+
+    /* Loading */
+    #loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    #loading span {
+      color: var(--text2);
+      font-size: 0.9rem;
+    }
+
+    /* Error */
+    #error-msg {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .error-icon { font-size: 2.5rem; }
+
+    #error-msg p {
+      color: var(--text2);
+      font-size: 0.9rem;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    /* Keyframes */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .sunrise-sunset-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 400px) {
+      #temp-value { font-size: 4rem; }
+      .weather-main-card { padding: 20px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-title">
+      আবহাওয়া
+      <span>Weather</span>
+    </div>
+    <div class="header-controls">
+      <button class="control-btn" id="dark-toggle">Dark Mode</button>
+      <button class="control-btn" id="lang-toggle">English</button>
+    </div>
+  </header>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="শহরের নাম খুঁজুন..." autocomplete="off" />
+      <button class="search-btn-primary" id="search-btn">খুঁজুন</button>
+    </div>
+    <div class="location-row">
+      <span id="last-searched"></span>
+      <button class="control-btn" id="location-btn">📍 আমার অবস্থান</button>
+    </div>
+  </div>
+
+  <!-- Alert Banner -->
+  <div class="alert-banner" id="alert-banner">
+    <div class="alert-icon">🌡️</div>
+    <div class="alert-content">
+      <strong id="alert-title"></strong>
+      <p id="alert-msg"></p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>লোড হচ্ছে...</span>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg">
+    <div class="error-icon">🌧️</div>
+    <p>শহর পাওয়া যায়নি।</p>
+  </div>
+
+  <!-- Weather Card -->
+  <div id="weather-card">
+    <div class="weather-main-card">
+      <div class="city-row">
+        <div class="city-info">
+          <h2><span id="city-name">—</span><span id="country-flag"></span></h2>
+          <p id="condition-text"></p>
+        </div>
+        <div class="weather-icon-wrap">
+          <img id="weather-icon" src="" alt="" />
+        </div>
+      </div>
+
+      <div class="temp-display">
+        <div id="temp-value">—</div>
+      </div>
+      <div id="feels-like"></div>
+      <div class="temp-bar-wrap">
+        <div id="temp-bar"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label" id="label-humidity">আর্দ্রতা</div>
+          <div class="stat-value"><span class="stat-icon">💧</span><span id="humidity-val">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="label-wind">বায়ুর গতি</div>
+          <div class="stat-value"><span class="stat-icon">💨</span><span id="wind-val">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="label-visibility">দৃশ্যমানতা</div>
+          <div class="stat-value"><span class="stat-icon">👁️</span><span id="visibility-val">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="label-pressure">বায়ুচাপ</div>
+          <div class="stat-value"><span class="stat-icon">🔵</span><span id="pressure-val">—</span></div>
+        </div>
+      </div>
+
+      <div class="sunrise-sunset-row">
+        <div class="stat-card">
+          <div class="stat-label" id="label-sunrise">সূর্যোদয়</div>
+          <div class="stat-value"><span class="stat-icon">🌅</span><span id="sunrise-val">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="label-sunset">সূর্যাস্ত</div>
+          <div class="stat-value"><span class="stat-icon">🌇</span><span id="sunset-val">—</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== LanguageService ====================
+const translations = {
+  en: {
+    searchPlaceholder: 'Search for a city...',
+    searchBtn: 'Search',
+    temperature: 'Temperature',
+    feelsLike: 'Feels Like',
+    humidity: 'Humidity',
+    windSpeed: 'Wind Speed',
+    visibility: 'Visibility',
+    pressure: 'Pressure',
+    sunrise: 'Sunrise',
+    sunset: 'Sunset',
+    loading: 'Fetching weather data...',
+    errorNotFound: 'City not found. Please check the spelling.',
+    errorNetwork: 'Network error. Please check your connection.',
+    errorGeneric: 'Something went wrong. Please try again.',
+    heatWarningTitle: '⚠️ Heat Warning',
+    heatWarningMsg: 'Heat Alert: Stay hydrated and avoid direct sunlight!',
+    heatDangerTitle: '🔥 Extreme Heat Danger',
+    heatDangerMsg: 'Extreme Heat! Stay indoors, drink plenty of water, and seek medical help if needed.',
+    langToggle: 'বাংলা',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    locationBtn: '📍 My Location',
+    lastSearched: 'Last searched',
+    weatherIn: 'Weather in',
+    feelsLikeLabel: 'Feels like',
+    kmh: 'km/h',
+    km: 'km',
+    hPa: 'hPa',
+    percent: '%',
+  },
+  bn: {
+    searchPlaceholder: 'শহরের নাম খুঁজুন...',
+    searchBtn: 'খুঁজুন',
+    temperature: 'তাপমাত্রা',
+    feelsLike: 'অনুভূত তাপমাত্রা',
+    humidity: 'আর্দ্রতা',
+    windSpeed: 'বায়ুর গতি',
+    visibility: 'দৃশ্যমানতা',
+    pressure: 'বায়ুচাপ',
+    sunrise: 'সূর্যোদয়',
+    sunset: 'সূর্যাস্ত',
+    loading: 'আবহাওয়ার তথ্য লোড হচ্ছে...',
+    errorNotFound: 'শহর পাওয়া যায়নি। বানান পরীক্ষা করুন।',
+    errorNetwork: 'নেটওয়ার্ক সমস্যা। সংযোগ পরীক্ষা করুন।',
+    errorGeneric: 'কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।',
+    heatWarningTitle: '⚠️ তাপ সতর্কতা',
+    heatWarningMsg: 'তাপ সতর্কতা: পানি পান করুন এবং রোদ এড়িয়ে চলুন!',
+    heatDangerTitle: '🔥 অত্যধিক তাপপ্রবাহ',
+    heatDangerMsg: 'অতিরিক্ত গরম! ঘরে থাকুন, প্রচুর পানি পান করুন এবং প্রয়োজনে চিকিৎসকের পরামর্শ নিন।',
+    langToggle: 'English',
+    darkMode: 'ডার্ক মোড',
+    lightMode: 'লাইট মোড',
+    locationBtn: '📍 আমার অবস্থান',
+    lastSearched: 'সর্বশেষ খোঁজা',
+    weatherIn: 'আবহাওয়া',
+    feelsLikeLabel: 'অনুভূতি',
+    kmh: 'কিমি/ঘন্টা',
+    km: 'কিমি',
+    hPa: 'হেক্টোপাস্কেল',
+    percent: '%',
+  }
+};
+
+class LanguageService {
+  constructor() {
+    this.lang = localStorage.getItem('weather_lang') || 'bn';
+  }
+  get(key) { return translations[this.lang][key] || key; }
+  toggle() {
+    this.lang = this.lang === 'en' ? 'bn' : 'en';
+    localStorage.setItem('weather_lang', this.lang);
+    return this.lang;
+  }
+  getLanguage() { return this.lang; }
+}
+
+// ==================== AlertService ====================
+class AlertService {
+  constructor(langService) { this.lang = langService; }
+  evaluate(temp) {
+    if (temp >= 40) return { level: 'danger', title: this.lang.get('heatDangerTitle'), message: this.lang.get('heatDangerMsg') };
+    if (temp >= 35) return { level: 'warning', title: this.lang.get('heatWarningTitle'), message: this.lang.get('heatWarningMsg') };
+    return { level: 'none', title: '', message: '' };
+  }
+}
+
+// ==================== WeatherService ====================
+class WeatherService {
+  constructor() {
+    this.API_KEY = 'bd5e378503939ddaee76f12ad7a97608';
+    this.BASE = 'https://api.openweathermap.org/data/2.5/weather';
+  }
+  async fetchByCity(city) {
+    const url = `${this.BASE}?q=${encodeURIComponent(city)}&appid=${this.API_KEY}&units=metric`;
+    return this._fetch(url);
+  }
+  async fetchByCoords(lat, lon) {
+    const url = `${this.BASE}?lat=${lat}&lon=${lon}&appid=${this.API_KEY}&units=metric`;
+    return this._fetch(url);
+  }
+  async _fetch(url) {
+    let response, data;
+    try {
+      response = await fetch(url);
+      data = await response.json();
+    } catch (e) { throw new Error('NETWORK_ERROR'); }
+    if (!response.ok || data.cod === '404' || data.cod === 404) throw new Error('NOT_FOUND');
+    return {
+      city: data.name,
+      country: data.sys.country,
+      temperature: Math.round(data.main.temp),
+      feelsLike: Math.round(data.main.feels_like),
+      condition: data.weather[0].description,
+      conditionCode: data.weather[0].id,
+      humidity: data.main.humidity,
+      windSpeed: Math.round(data.wind.speed * 3.6),
+      visibility: Math.round((data.visibility || 0) / 1000),
+      pressure: data.main.pressure,
+      icon: data.weather[0].icon,
+      sunrise: data.sys.sunrise,
+      sunset: data.sys.sunset,
+      timezone: data.timezone,
+    };
+  }
+}
+
+// ==================== WeatherUI ====================
+class WeatherUI {
+  constructor(langService) { this.lang = langService; }
+
+  el(id) { return document.getElementById(id); }
+  setText(id, val) { const e = this.el(id); if (e) e.textContent = val; }
+
+  updateLabels() {
+    this.setText('label-humidity', this.lang.get('humidity'));
+    this.setText('label-wind', this.lang.get('windSpeed'));
+    this.setText('label-visibility', this.lang.get('visibility'));
+    this.setText('label-pressure', this.lang.get('pressure'));
+    this.setText('label-sunrise', this.lang.get('sunrise'));
+    this.setText('label-sunset', this.lang.get('sunset'));
+    this.setText('lang-toggle', this.lang.get('langToggle'));
+    this.setText('search-btn', this.lang.get('searchBtn'));
+    this.setText('location-btn', this.lang.get('locationBtn'));
+    const inp = this.el('search-input');
+    if (inp) inp.placeholder = this.lang.get('searchPlaceholder');
+    const dk = this.el('dark-toggle');
+    if (dk) dk.textContent = document.body.classList.contains('dark')
+      ? this.lang.get('lightMode') : this.lang.get('darkMode');
+  }
+
+  showLoading() {
+    this.hideAll();
+    const el = this.el('loading');
+    if (el) {
+      el.style.display = 'flex';
+      const sp = el.querySelector('span');
+      if (sp) sp.textContent = this.lang.get('loading');
+    }
+  }
+
+  showError(type) {
+    this.hideAll();
+    const el = this.el('error-msg');
+    if (!el) return;
+    el.style.display = 'flex';
+    const p = el.querySelector('p');
+    if (p) {
+      if (type === 'NOT_FOUND') p.textContent = this.lang.get('errorNotFound');
+      else if (type === 'NETWORK_ERROR') p.textContent = this.lang.get('errorNetwork');
+      else p.textContent = this.lang.get('errorGeneric');
+    }
+  }
+
+  showWeather(data, alert) {
+    this.hideAll();
+    const card = this.el('weather-card');
+    if (card) card.style.display = 'block';
+    this._renderWeather(data);
+    this._renderAlert(alert);
+    this.updateLabels();
+  }
+
+  _renderWeather(data) {
+    this.setText('city-name', data.city);
+    this.setText('temp-value', `${data.temperature}°C`);
+    this.setText('feels-like', `${this.lang.get('feelsLikeLabel')} ${data.feelsLike}°C`);
+    this.setText('condition-text', this._cap(data.condition));
+    this.setText('humidity-val', `${data.humidity}${this.lang.get('percent')}`);
+    this.setText('wind-val', `${data.windSpeed} ${this.lang.get('kmh')}`);
+    this.setText('visibility-val', `${data.visibility} ${this.lang.get('km')}`);
+    this.setText('pressure-val', `${data.pressure} ${this.lang.get('hPa')}`);
+    this.setText('country-flag', this._flag(data.country));
+    this.setText('sunrise-val', this._time(data.sunrise, data.timezone));
+    this.setText('sunset-val', this._time(data.sunset, data.timezone));
+
+    const icon = this.el('weather-icon');
+    if (icon) {
+      icon.src = `https://openweathermap.org/img/wn/${data.icon}@2x.png`;
+      icon.alt = data.condition;
+    }
+
+    const bar = this.el('temp-bar');
+    if (bar) {
+      const pct = Math.min(100, Math.max(0, ((data.temperature + 10) / 60) * 100));
+      bar.style.width = pct + '%';
+      bar.style.background = data.temperature >= 40 ? 'var(--danger)'
+        : data.temperature >= 35 ? 'var(--warning)'
+        : data.temperature >= 25 ? 'var(--warm)' : 'var(--cool)';
+    }
+  }
+
+  _renderAlert(alert) {
+    const banner = this.el('alert-banner');
+    if (!banner) return;
+    document.body.classList.remove('heat-warning', 'heat-danger');
+    if (alert.level === 'none') { banner.style.display = 'none'; return; }
+    banner.style.display = 'flex';
+    banner.className = `alert-banner alert-${alert.level}`;
+    document.body.classList.add(alert.level === 'danger' ? 'heat-danger' : 'heat-warning');
+    this.setText('alert-title', alert.title);
+    this.setText('alert-msg', alert.message);
+    const icon = banner.querySelector('.alert-icon');
+    if (icon) icon.textContent = alert.level === 'danger' ? '🔥' : '⚠️';
+  }
+
+  setLastSearched(city) {
+    const el = this.el('last-searched');
+    if (el && city) {
+      el.style.display = 'block';
+      el.textContent = `${this.lang.get('lastSearched')}: ${city}`;
+    }
+  }
+
+  toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark');
+    const btn = this.el('dark-toggle');
+    if (btn) btn.textContent = isDark ? this.lang.get('lightMode') : this.lang.get('darkMode');
+    localStorage.setItem('weather_dark', isDark ? '1' : '0');
+  }
+
+  restoreDarkMode() {
+    if (localStorage.getItem('weather_dark') === '1') {
+      document.body.classList.add('dark');
+    }
+  }
+
+  hideAll() {
+    ['weather-card', 'loading', 'error-msg'].forEach(id => {
+      const el = this.el(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  _time(unix, tz) {
+    const d = new Date((unix + tz) * 1000);
+    return d.getUTCHours().toString().padStart(2,'0') + ':' + d.getUTCMinutes().toString().padStart(2,'0');
+  }
+
+  _flag(code) {
+    return code.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+  }
+
+  _cap(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+}
+
+// ==================== App ====================
+class App {
+  constructor() {
+    this.langService = new LanguageService();
+    this.alertService = new AlertService(this.langService);
+    this.weatherService = new WeatherService();
+    this.ui = new WeatherUI(this.langService);
+    this.isLoading = false;
+    this.currentWeather = null;
+    this.lastCity = localStorage.getItem('weather_last_city') || '';
+    this.debounceTimer = null;
+  }
+
+  init() {
+    this.ui.restoreDarkMode();
+    this.ui.updateLabels();
+    document.documentElement.lang = this.langService.getLanguage() === 'bn' ? 'bn' : 'en';
+    this._bindEvents();
+    if (this.lastCity) {
+      this.ui.setLastSearched(this.lastCity);
+      this._search(this.lastCity);
+    }
+  }
+
+  _bindEvents() {
+    document.getElementById('search-btn').addEventListener('click', () => this._onSearch());
+    const input = document.getElementById('search-input');
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') this._onSearch(); });
+    input.addEventListener('input', () => {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => {
+        const v = input.value.trim();
+        if (v.length >= 3) this._search(v);
+      }, 600);
+    });
+
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      this.langService.toggle();
+      document.documentElement.lang = this.langService.getLanguage() === 'bn' ? 'bn' : 'en';
+      this.ui.updateLabels();
+      if (this.currentWeather) {
+        const alert = this.alertService.evaluate(this.currentWeather.temperature);
+        this.ui.showWeather(this.currentWeather, alert);
+      }
+      if (this.lastCity) this.ui.setLastSearched(this.lastCity);
+    });
+
+    document.getElementById('dark-toggle').addEventListener('click', () => this.ui.toggleDarkMode());
+
+    document.getElementById('location-btn').addEventListener('click', () => {
+      if (!navigator.geolocation) return;
+      this.ui.showLoading();
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          try {
+            const data = await this.weatherService.fetchByCoords(pos.coords.latitude, pos.coords.longitude);
+            this._handleWeatherData(data);
+          } catch { this.ui.showError('NETWORK_ERROR'); }
+        },
+        () => this.ui.showError('GENERIC')
+      );
+    });
+  }
+
+  _onSearch() {
+    const input = document.getElementById('search-input');
+    const city = input.value.trim();
+    if (city) this._search(city);
+  }
+
+  async _search(city) {
+    if (this.isLoading) return;
+    this.isLoading = true;
+    this.ui.showLoading();
+    try {
+      const data = await this.weatherService.fetchByCity(city);
+      this._handleWeatherData(data);
+    } catch (err) {
+      const msg = err.message;
+      if (msg === 'NOT_FOUND') this.ui.showError('NOT_FOUND');
+      else if (msg === 'NETWORK_ERROR') this.ui.showError('NETWORK_ERROR');
+      else this.ui.showError('GENERIC');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  _handleWeatherData(data) {
+    this.currentWeather = data;
+    this.lastCity = data.city;
+    localStorage.setItem('weather_last_city', data.city);
+    this.ui.setLastSearched(data.city);
+    const alert = this.alertService.evaluate(data.temperature);
+    this.ui.showWeather(data, alert);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => new App().init());
+</script>
+</body>
+</html>
