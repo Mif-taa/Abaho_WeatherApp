@@ -1,4 +1,4 @@
-# 🌤️ আবহাওয়া — Bengali Weather App
+# 🌤️ আবহ — Bengali Weather App
 
 A TypeScript weather application with Bangla language support and heat alert system.
 
